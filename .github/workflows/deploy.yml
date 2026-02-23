@@ -1,0 +1,98 @@
+name: deploy-skeleton
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Deployment target"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+      model_version:
+        description: "Model version or channel (stable/canary)"
+        required: true
+        default: "stable"
+        type: string
+      canary_enabled:
+        description: "Enable canary path"
+        required: true
+        default: false
+        type: boolean
+      rollback_to:
+        description: "Optional rollback model version"
+        required: false
+        type: string
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate deployment inputs
+        run: |
+          set -euo pipefail
+          target="${{ inputs.target_env }}"
+          canary="${{ inputs.canary_enabled }}"
+          rollback="${{ inputs.rollback_to }}"
+          model_version="${{ inputs.model_version }}"
+
+          if [ -z "$model_version" ]; then
+            echo "model_version is required"
+            exit 1
+          fi
+
+          if [ "$target" = "staging" ] && [ "$canary" = "true" ]; then
+            echo "canary_enabled=true is only valid for production"
+            exit 1
+          fi
+
+          if [ -n "$rollback" ] && [ "$target" != "production" ]; then
+            echo "rollback_to is only valid for production"
+            exit 1
+          fi
+
+          if [ -n "$rollback" ] && [ "$canary" = "true" ]; then
+            echo "rollback and canary cannot be enabled together"
+            exit 1
+          fi
+
+  deploy:
+    needs: preflight
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-${{ inputs.target_env }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deployment summary
+        run: |
+          echo "target=${{ inputs.target_env }}"
+          echo "model_version=${{ inputs.model_version }}"
+          echo "canary_enabled=${{ inputs.canary_enabled }}"
+
+      - name: Apply staging manifest
+        if: ${{ inputs.target_env == 'staging' }}
+        run: |
+          echo "[skeleton] kubectl apply -f infra/deployment-template.yaml"
+          echo "[skeleton] set MODEL_VERSION=${{ inputs.model_version }}"
+
+      - name: Apply production canary
+        if: ${{ inputs.target_env == 'production' && inputs.canary_enabled == true }}
+        run: |
+          echo "[skeleton] deploy canary slice with MODEL_VERSION=${{ inputs.model_version }}"
+          echo "[skeleton] shift 5% traffic to canary"
+
+      - name: Apply production stable
+        if: ${{ inputs.target_env == 'production' && inputs.canary_enabled == false }}
+        run: |
+          echo "[skeleton] deploy stable rollout with MODEL_VERSION=${{ inputs.model_version }}"
+
+      - name: Rollback notes
+        if: ${{ inputs.rollback_to != '' }}
+        run: |
+          echo "rollback requested: ${{ inputs.rollback_to }}"
+          echo "Set MODEL_VERSION=${{ inputs.rollback_to }}, disable canary, and redeploy"
+          echo "See infra/rollback-notes.md for full procedure"

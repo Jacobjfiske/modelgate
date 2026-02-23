@@ -1,0 +1,29 @@
+{
+  "model_version": "v20260222-220215",
+  "intended_stage": "staging",
+  "metrics": {
+    "mae": 0.006196332988741513
+  },
+  "schema": {
+    "transaction_amount": {
+      "type": "float",
+      "min": 0.0,
+      "max": 10000.0
+    },
+    "account_age_days": {
+      "type": "int",
+      "min": 0,
+      "max": 5000
+    },
+    "avg_daily_transactions": {
+      "type": "float",
+      "min": 0.0,
+      "max": 200.0
+    },
+    "country_risk_score": {
+      "type": "float",
+      "min": 0.0,
+      "max": 1.0
+    }
+  }
+}

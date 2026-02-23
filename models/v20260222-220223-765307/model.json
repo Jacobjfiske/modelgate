@@ -1,0 +1,17 @@
+{
+  "model_type": "linear-risk-score",
+  "feature_order": [
+    "transaction_amount",
+    "account_age_days",
+    "avg_daily_transactions",
+    "country_risk_score"
+  ],
+  "weights": [
+    -0.0006536291073675157,
+    0.0001295909639108441,
+    0.09394881815856529,
+    1.129254780942212
+  ],
+  "intercept": -0.17525090308510805,
+  "created_at": "2026-02-22T22:02:23.765347+00:00"
+}

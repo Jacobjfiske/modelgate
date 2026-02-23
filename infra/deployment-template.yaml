@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: modelgate-inference
+  labels:
+    app: modelgate-inference
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: modelgate-inference
+  template:
+    metadata:
+      labels:
+        app: modelgate-inference
+    spec:
+      containers:
+        - name: inference
+          image: ghcr.io/your-org/modelgate:latest
+          ports:
+            - containerPort: 8010
+          env:
+            - name: MODEL_VERSION
+              value: "stable"
+            - name: SERVICE_NAME
+              value: "modelgate-inference"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: modelgate-inference
+spec:
+  selector:
+    app: modelgate-inference
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8010
